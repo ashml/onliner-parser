@@ -1,0 +1,6 @@
+venv/
+.venv/
+__pycache__/
+.env
+state.json
+run_bot.bat
