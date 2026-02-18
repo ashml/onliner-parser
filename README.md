@@ -63,7 +63,19 @@ python onliner_bot.py last24h --model gpt-oss-20b
 python onliner_bot.py watch --interval 300 --ollama-model qwen2.5:14b
 ```
 
-Для Windows добавлен интерактивный запуск: `run_onliner_bot.bat` (выбор режима и модели).
+Интерактивный запуск (launcher):
+
+```bash
+python main.py
+```
+
+Для Windows `.bat`-лаунчер должен быть минимальным:
+
+```bat
+@echo off
+python main.py
+pause
+```
 
 ## Настройки
 

@@ -399,9 +399,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    load_dotenv()
-    args = parse_args()
+def run_app(args: argparse.Namespace) -> None:
     logging.basicConfig(level=args.log_level, format="%(asctime)s %(levelname)s %(message)s")
 
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -417,6 +415,12 @@ def main() -> None:
         run_last24h(client, publisher, args.state_file)
     else:
         run_watch(client, publisher, args.interval, args.state_file)
+
+
+def main() -> None:
+    load_dotenv()
+    args = parse_args()
+    run_app(args)
 
 
 if __name__ == "__main__":
