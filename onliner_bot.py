@@ -14,7 +14,12 @@ from bs4 import BeautifulSoup
 from dateutil import parser as dateparser
 from dotenv import load_dotenv
 
-from summarizer import BaseSummarizer, get_summarizer, truncate_by_sentences
+from summarizer import (
+    BaseSummarizer,
+    get_summarizer,
+    get_supported_model_options,
+    truncate_by_sentences,
+)
 
 BASE_URL = "https://tech.onliner.by/"
 ARTICLE_URL_RE = re.compile(r"https://tech\.onliner\.by/\d{4}/\d{2}/\d{2}/[\w\-]+")
@@ -24,7 +29,6 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 TELEGRAM_CAPTION_LIMIT = 1024
-LARGE_ARTICLE_THRESHOLD = 1500
 STATE_MAX_AGE_DAYS = 7
 UNWANTED_BODY_PATTERNS = [
     re.compile(r"есть\s+о\s+чем\s+рассказать\?", re.IGNORECASE),
@@ -181,7 +185,7 @@ def build_post(article: Article, summarizer: BaseSummarizer) -> str:
     if not original_body:
         original_body = "Текст статьи отсутствует."
 
-    source_label = "Подробнее..." if len(original_body) > LARGE_ARTICLE_THRESHOLD else "Источник"
+    source_label = "Подробнее..."
     source_html = build_source_link(article.url, source_label)
 
     if post_visible_len(title, original_body, source_label) <= TELEGRAM_CAPTION_LIMIT:
@@ -356,6 +360,7 @@ def run_watch(
 
 
 def parse_args() -> argparse.Namespace:
+    model_options = get_supported_model_options()
     parser = argparse.ArgumentParser(
         description="Парсер раздела технологий onliner.by с публикацией в Telegram."
     )
@@ -376,12 +381,24 @@ def parse_args() -> argparse.Namespace:
         default="INFO",
         help="Уровень логирования",
     )
+    parser.add_argument(
+        "--model",
+        choices=model_options,
+        default="auto",
+        help=(
+            "Модель суммаризации: auto (автовыбор), "
+            "llama или gpt-oss-20b"
+        ),
+    )
+    parser.add_argument(
+        "--ollama-model",
+        default=None,
+        help="Точное имя модели из `ollama list` (например, llama3.1:8b)",
+    )
     return parser.parse_args()
 
 
-def main() -> None:
-    load_dotenv()
-    args = parse_args()
+def run_app(args: argparse.Namespace) -> None:
     logging.basicConfig(level=args.log_level, format="%(asctime)s %(levelname)s %(message)s")
 
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -390,13 +407,19 @@ def main() -> None:
         raise SystemExit("Нужны TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL в окружении")
 
     client = OnlinerClient()
-    summarizer = get_summarizer()
+    summarizer = get_summarizer(args.model, args.ollama_model)
     publisher = TelegramPublisher(token=token, channel=channel, summarizer=summarizer)
 
     if args.mode == "last24h":
         run_last24h(client, publisher, args.state_file)
     else:
         run_watch(client, publisher, args.interval, args.state_file)
+
+
+def main() -> None:
+    load_dotenv()
+    args = parse_args()
+    run_app(args)
 
 
 if __name__ == "__main__":

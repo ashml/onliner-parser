@@ -8,10 +8,12 @@
   - `last24h`: найти все новости за последние 24 часа и опубликовать.
   - `watch`: непрерывный режим, проверка новых новостей с интервалом.
 - Интеллектуальная суммаризация через Ollama HTTP API (без сборки C++ и `llama-cpp-python`).
-- Автовыбор модели:
-  - `llama3.1:8b` (при наличии в Ollama; обычно на GPU).
-  - fallback: `mistral:7b`.
-  - если Ollama недоступна или модели отсутствуют: безопасное сокращение без LLM.
+- Выбор модели суммаризации через CLI:
+  - `--model auto` (по умолчанию): `llama3.1:8b` → `gpt-oss:20b` → `mistral:7b`.
+  - `--model llama`: принудительно семейство llama (`llama3.1:8b`).
+  - `--model gpt-oss-20b`: принудительно `gpt-oss:20b`.
+  - `--ollama-model <имя>`: точное имя любой скачанной модели из `ollama list`.
+  - если Ollama недоступна или модель не найдена: безопасное сокращение без LLM.
 - Пост формируется как:
   - `TITLE` (жирным)
   - пустая строка
@@ -41,6 +43,7 @@ TELEGRAM_CHANNEL=@your_channel
 
 ```bash
 ollama pull llama3.1:8b
+ollama pull gpt-oss:20b
 ollama pull mistral:7b
 ```
 
@@ -51,6 +54,27 @@ ollama pull mistral:7b
 ```bash
 python onliner_bot.py last24h
 python onliner_bot.py watch --interval 300
+
+# выбор алиаса модели
+python onliner_bot.py last24h --model llama
+python onliner_bot.py last24h --model gpt-oss-20b
+
+# выбор точной локальной модели из `ollama list`
+python onliner_bot.py watch --interval 300 --ollama-model qwen2.5:14b
+```
+
+Интерактивный запуск (launcher):
+
+```bash
+python main.py
+```
+
+Для Windows `.bat`-лаунчер должен быть минимальным:
+
+```bat
+@echo off
+python main.py
+pause
 ```
 
 ## Настройки
@@ -58,6 +82,8 @@ python onliner_bot.py watch --interval 300
 - `--interval` — интервал проверки (в секундах) для режима `watch`.
 - `--state-file` — путь к файлу состояния для хранения уже опубликованных ссылок (используется и в `watch`, и в `last24h`, чтобы не публиковать повторно между перезапусками).
   Старые ссылки автоматически удаляются из state-файла, если их возраст по дате в URL превышает 7 дней.
+- `--model` — алиас модели суммаризатора: `auto`, `llama`, `gpt-oss-20b`.
+- `--ollama-model` — точное имя модели из локального `ollama list` (имеет приоритет над `--model`).
 
 ## Как работает суммаризация
 

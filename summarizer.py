@@ -15,7 +15,9 @@ SYSTEM_PROMPT = """Ты — профессиональный редактор н
 Сохраняй ключевые факты, цифры, даты и имена.
 Не добавляй ничего от себя.
 Не добавляй заголовок и ссылку.
-Не включай редакционные или служебные фразы, которые не относятся к сути новости (например призывы написать в бот, рекламу, дисклеймеры).
+Если в тексте статьи есть слово Белоруссия или Беларусь используй только форму "Беларусь".
+Не включай редакционные или служебные фразы, которые не относятся к сути новости (например призывы написать в бот, рекламу, дисклеймеры, ссылки).
+Не включай сообщения вида 'Перепечатка текста и фотографий Onlíner без разрешения редакции запрещена.'
 Пиши кратко, нейтрально, без вводных фраз."""
 
 USER_PROMPT_TEMPLATE = """Сократи текст до не более {limit} символов.
@@ -79,22 +81,60 @@ class SimpleTruncationSummarizer(BaseSummarizer):
         return truncate_by_sentences(text, limit)
 
 
-def get_summarizer() -> BaseSummarizer:
+MODEL_ALIASES: dict[str, tuple[str, ...]] = {
+    "llama": ("llama3.1:8b",),
+    "gpt-oss-20b": ("gpt-oss:20b",),
+}
+
+
+def get_supported_model_options() -> tuple[str, ...]:
+    return ("auto", *MODEL_ALIASES.keys())
+
+
+def get_summarizer(model_option: str = "auto", ollama_model: str | None = None) -> BaseSummarizer:
     models = _get_available_ollama_models()
     if not models:
         logging.warning("Ollama is unavailable; using simple truncation summarizer")
         return SimpleTruncationSummarizer()
 
-    if _model_available(models, "llama3.1:8b"):
-        logging.info("Using Ollama model llama3.1:8b")
-        return OllamaSummarizer("llama3.1:8b")
+    if ollama_model:
+        selected_model = _find_matching_model_name(models, ollama_model)
+        if selected_model:
+            logging.info("Using explicitly selected Ollama model %s", selected_model)
+            return OllamaSummarizer(selected_model)
+        logging.warning("Explicit Ollama model '%s' not found; fallback to configured option", ollama_model)
 
-    if _model_available(models, "mistral:7b"):
-        logging.info("Using Ollama model mistral:7b")
-        return OllamaSummarizer("mistral:7b")
+    selected_model = _resolve_model_name(model_option, models)
+    if selected_model:
+        logging.info("Using Ollama model %s", selected_model)
+        return OllamaSummarizer(selected_model)
+
+    if model_option != "auto":
+        logging.warning(
+            "Requested model option '%s' not found in Ollama; using simple truncation",
+            model_option,
+        )
+        return SimpleTruncationSummarizer()
 
     logging.warning("Preferred models not found in Ollama; fallback to simple truncation")
     return SimpleTruncationSummarizer()
+
+
+def _resolve_model_name(model_option: str, available_models: list[str]) -> str | None:
+    if model_option == "auto":
+        ordered_candidates = (
+            *MODEL_ALIASES["llama"],
+            *MODEL_ALIASES["gpt-oss-20b"],
+            "mistral:7b",
+        )
+    else:
+        ordered_candidates = MODEL_ALIASES.get(model_option, ())
+
+    for candidate in ordered_candidates:
+        resolved = _find_matching_model_name(available_models, candidate)
+        if resolved:
+            return resolved
+    return None
 
 
 def _get_available_ollama_models() -> list[str]:
@@ -110,13 +150,13 @@ def _get_available_ollama_models() -> list[str]:
         return []
 
 
-def _model_available(models: list[str], target: str) -> bool:
+def _find_matching_model_name(models: list[str], target: str) -> str | None:
     normalized = target.lower()
     for model_name in models:
         lower_name = model_name.lower()
         if lower_name == normalized or lower_name.startswith(f"{normalized}:"):
-            return True
-    return False
+            return model_name
+    return None
 
 
 def enforce_limit(text: str, limit: int) -> str:
