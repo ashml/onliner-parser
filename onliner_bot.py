@@ -14,7 +14,12 @@ from bs4 import BeautifulSoup
 from dateutil import parser as dateparser
 from dotenv import load_dotenv
 
-from summarizer import BaseSummarizer, get_summarizer, truncate_by_sentences
+from summarizer import (
+    BaseSummarizer,
+    get_summarizer,
+    get_supported_model_options,
+    truncate_by_sentences,
+)
 
 BASE_URL = "https://tech.onliner.by/"
 ARTICLE_URL_RE = re.compile(r"https://tech\.onliner\.by/\d{4}/\d{2}/\d{2}/[\w\-]+")
@@ -356,6 +361,7 @@ def run_watch(
 
 
 def parse_args() -> argparse.Namespace:
+    model_options = get_supported_model_options()
     parser = argparse.ArgumentParser(
         description="Парсер раздела технологий onliner.by с публикацией в Telegram."
     )
@@ -376,6 +382,20 @@ def parse_args() -> argparse.Namespace:
         default="INFO",
         help="Уровень логирования",
     )
+    parser.add_argument(
+        "--model",
+        choices=model_options,
+        default="auto",
+        help=(
+            "Модель суммаризации: auto (автовыбор), "
+            "llama или gpt-oss-20b"
+        ),
+    )
+    parser.add_argument(
+        "--ollama-model",
+        default=None,
+        help="Точное имя модели из `ollama list` (например, llama3.1:8b)",
+    )
     return parser.parse_args()
 
 
@@ -390,7 +410,7 @@ def main() -> None:
         raise SystemExit("Нужны TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL в окружении")
 
     client = OnlinerClient()
-    summarizer = get_summarizer()
+    summarizer = get_summarizer(args.model, args.ollama_model)
     publisher = TelegramPublisher(token=token, channel=channel, summarizer=summarizer)
 
     if args.mode == "last24h":
