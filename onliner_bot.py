@@ -29,7 +29,6 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 TELEGRAM_CAPTION_LIMIT = 1024
-LARGE_ARTICLE_THRESHOLD = 1500
 STATE_MAX_AGE_DAYS = 7
 UNWANTED_BODY_PATTERNS = [
     re.compile(r"есть\s+о\s+чем\s+рассказать\?", re.IGNORECASE),
@@ -186,7 +185,7 @@ def build_post(article: Article, summarizer: BaseSummarizer) -> str:
     if not original_body:
         original_body = "Текст статьи отсутствует."
 
-    source_label = "Подробнее..." if len(original_body) > LARGE_ARTICLE_THRESHOLD else "Источник"
+    source_label = "Подробнее..."
     source_html = build_source_link(article.url, source_label)
 
     if post_visible_len(title, original_body, source_label) <= TELEGRAM_CAPTION_LIMIT:
