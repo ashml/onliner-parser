@@ -4,3 +4,4 @@ __pycache__/
 .env
 state.json
 run_bot.bat
+launcher_settings.json
