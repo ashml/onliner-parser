@@ -188,18 +188,15 @@ def build_post(article: Article, summarizer: BaseSummarizer) -> str:
     source_label = "Подробнее..."
     source_html = build_source_link(article.url, source_label)
 
-    if post_visible_len(title, original_body, source_label) <= TELEGRAM_CAPTION_LIMIT:
-        return compose_post(escape_html(title, keep_quotes=False), escape_html(original_body), source_html)
-
     try:
-        summary = summarizer.summarize(original_body, 950)
+        summary = summarizer.summarize(original_body, 1000)
     except Exception as exc:  # pylint: disable=broad-except
         logging.warning("Initial summarization failed: %s", exc)
-        summary = truncate_by_sentences(original_body, 950)
+        summary = truncate_by_sentences(original_body, 1000)
 
     iteration = 0
     while post_visible_len(title, summary, source_label) > TELEGRAM_CAPTION_LIMIT and iteration < 3:
-        new_limit = 900 - iteration * 50
+        new_limit = 1000 - iteration * 50
         try:
             summary = summarizer.summarize(summary, new_limit)
         except Exception as exc:  # pylint: disable=broad-except
