@@ -139,6 +139,12 @@ class OnlinerClient:
 
         paragraphs: List[str] = []
         if body:
+            for unwanted_block in body.select(".news-promo, .news-banner, .news-last, .news-comment, .news-reference"):
+                unwanted_block.decompose()
+
+            for ad_container in body.find_all("div", id=re.compile(r"^adfox_", re.IGNORECASE)):
+                ad_container.decompose()
+
             for paragraph in body.find_all("p"):
                 text = paragraph.get_text(" ", strip=True)
                 if text and not contains_unwanted_body_text(text):
