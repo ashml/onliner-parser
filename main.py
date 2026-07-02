@@ -11,8 +11,8 @@ from onliner_bot import run_app
 
 
 SETTINGS_FILE = Path("launcher_settings.json")
-DEFAULT_MODEL = "llama"
-MODEL_ALIASES = {"auto", "llama", "gpt-oss-20b"}
+DEFAULT_MODEL = "qwen"
+MODEL_ALIASES = {"auto", "qwen", "gpt-oss-20b"}
 
 
 def load_launcher_settings() -> dict[str, str]:
@@ -47,7 +47,7 @@ def ask_choice(prompt: str, allowed: set[str]) -> str:
 def ask_model() -> tuple[str, str | None]:
     print("\n=== Меню выбора модели ===")
     print("1 - auto")
-    print("2 - llama")
+    print("2 - qwen")
     print("3 - gpt-oss-20b")
     print("4 - ввести точное имя модели из ollama list")
     print("0 - назад в основное меню")
@@ -58,7 +58,7 @@ def ask_model() -> tuple[str, str | None]:
     if selected == "1":
         return "auto", None
     if selected == "2":
-        return "llama", None
+        return "qwen", None
     if selected == "3":
         return "gpt-oss-20b", None
 

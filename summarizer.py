@@ -84,7 +84,7 @@ class SimpleTruncationSummarizer(BaseSummarizer):
 
 
 MODEL_ALIASES: dict[str, tuple[str, ...]] = {
-    "llama": ("llama3.1:8b",),
+    "qwen": ("qwen3:30b-instruct",),
     "gpt-oss-20b": ("gpt-oss:20b",),
 }
 
@@ -125,9 +125,8 @@ def get_summarizer(model_option: str = "auto", ollama_model: str | None = None) 
 def _resolve_model_name(model_option: str, available_models: list[str]) -> str | None:
     if model_option == "auto":
         ordered_candidates = (
-            *MODEL_ALIASES["llama"],
+            *MODEL_ALIASES["qwen"],
             *MODEL_ALIASES["gpt-oss-20b"],
-            "mistral:7b",
         )
     else:
         ordered_candidates = MODEL_ALIASES.get(model_option, ())

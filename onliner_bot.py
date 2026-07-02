@@ -390,13 +390,13 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         help=(
             "Модель суммаризации: auto (автовыбор), "
-            "llama или gpt-oss-20b"
+            "qwen или gpt-oss-20b"
         ),
     )
     parser.add_argument(
         "--ollama-model",
         default=None,
-        help="Точное имя модели из `ollama list` (например, llama3.1:8b)",
+        help="Точное имя модели из `ollama list` (например, qwen3:30b-instruct)",
     )
     return parser.parse_args()
 
